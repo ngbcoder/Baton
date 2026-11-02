@@ -40,17 +40,17 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 
 ### M1.1 Package scaffold
 - [x] Create Dart package `protocol/` with `pubspec.yaml` (name: `baton_protocol`)
-- [ ] Set Dart SDK constraint and dependencies (none external initially)
-- [ ] Add `lib/src/` structure: `messages/`, `state/`, `pairing/`, `transport/`
-- [ ] Add `lib/baton_protocol.dart` barrel export
-- [ ] Add example/ smoke test
+- [x] Set Dart SDK constraint and dependencies (none external initially)
+- [x] Add `lib/src/` structure: `messages/`, `state/`, `pairing/`, `transport/`
+- [x] Add `lib/baton_protocol.dart` barrel export
+- [x] Add example/ smoke test
 
 ### M1.2 Message envelope
 - [x] Define `Message` base class with `type`, `id` (UUID), `ts` (epoch ms)
 - [x] Implement JSON serialization/deserialization with strict field validation
 - [x] Implement length-prefixed framing helpers (encode/decode)
 - [x] Add unit tests for envelope round-trip
-- [ ] Add unit tests for malformed/unknown message handling
+- [x] Add unit tests for malformed/unknown message handling
 
 ### M1.3 Message types (v1)
 - [x] Implement `Hello` (version, capabilities)
@@ -65,16 +65,16 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 - [x] Add round-trip tests for each message type
 
 ### M1.4 Version & capability negotiation
-- [ ] Define protocol version constant (e.g. `1.0`)
-- [ ] Implement `Hello` exchange on connect
-- [ ] Reject peers with incompatible major version
-- [ ] Expose capability flags (multipoint, audio crossover, etc.)
-- [ ] Tests for version mismatch handling
+- [x] Define protocol version constant (e.g. `1.0`)
+- [x] Implement `Hello` exchange on connect (helper + version check)
+- [x] Reject peers with incompatible major version
+- [x] Expose capability flags (multipoint, audio crossover, etc.)
+- [x] Tests for version mismatch handling
 
 ### M1.5 Error codes
 - [x] Define `HandoffFailureReason` enum: `DEVICE_UNAVAILABLE`, `BUSY`, `TIMEOUT`, `DISCONNECT_FAILED`, `CONNECT_FAILED`, `OUT_OF_RANGE`, `REJECTED`, `UNKNOWN`
-- [ ] Map reason codes to user-facing strings (i18n-ready)
-- [ ] Tests for enum serialization
+- [x] Map reason codes to user-facing strings (i18n-ready)
+- [x] Tests for enum serialization
 
 ---
 

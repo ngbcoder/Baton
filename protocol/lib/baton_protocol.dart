@@ -3,6 +3,8 @@ library;
 
 export 'src/messages/message.dart';
 export 'src/messages/types.dart';
+export 'src/messages/version.dart';
+export 'src/messages/error_messages.dart';
 export 'src/platform/bluetooth.dart';
 export 'src/state/handoff.dart';
 export 'src/pairing/peer.dart';

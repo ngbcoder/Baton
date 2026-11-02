@@ -7,7 +7,7 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 ## M0 — Project Bootstrap & Tooling
 
 ### M0.1 Repository & workspace
-- [ ] Create repository `baton/` with top-level folders: `protocol/`, `android/`, `desktop/`, `docs/`
+- [x] Create repository `baton/` with top-level folders: `protocol/`, `android/`, `desktop/`, `docs/`
 - [ ] Add root `README.md` with project summary, platforms, and quick start
 - [ ] Add `.gitignore` for Dart/Flutter, Android, Windows, Linux build artifacts
 - [ ] Add `LICENSE` (choose MIT or Apache-2.0) and record choice in docs
@@ -39,30 +39,30 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 ## M1 — Protocol Package (`protocol/`)
 
 ### M1.1 Package scaffold
-- [ ] Create Dart package `protocol/` with `pubspec.yaml` (name: `baton_protocol`)
+- [x] Create Dart package `protocol/` with `pubspec.yaml` (name: `baton_protocol`)
 - [ ] Set Dart SDK constraint and dependencies (none external initially)
 - [ ] Add `lib/src/` structure: `messages/`, `state/`, `pairing/`, `transport/`
 - [ ] Add `lib/baton_protocol.dart` barrel export
 - [ ] Add example/ smoke test
 
 ### M1.2 Message envelope
-- [ ] Define `Message` base class with `type`, `id` (UUID), `ts` (epoch ms)
-- [ ] Implement JSON serialization/deserialization with strict field validation
-- [ ] Implement length-prefixed framing helpers (encode/decode)
-- [ ] Add unit tests for envelope round-trip
+- [x] Define `Message` base class with `type`, `id` (UUID), `ts` (epoch ms)
+- [x] Implement JSON serialization/deserialization with strict field validation
+- [x] Implement length-prefixed framing helpers (encode/decode)
+- [x] Add unit tests for envelope round-trip
 - [ ] Add unit tests for malformed/unknown message handling
 
 ### M1.3 Message types (v1)
-- [ ] Implement `Hello` (version, capabilities)
-- [ ] Implement `HandoffRequest` (bt address, device name, direction)
-- [ ] Implement `HandoffReady`
-- [ ] Implement `Released`
-- [ ] Implement `HandoffDone`
-- [ ] Implement `HandoffFailed` (reason code)
-- [ ] Implement `Busy`
-- [ ] Implement `DeviceList` (list of headphones + owner state)
-- [ ] Add `type` string constants and a registry/factory for decoding
-- [ ] Add round-trip tests for each message type
+- [x] Implement `Hello` (version, capabilities)
+- [x] Implement `HandoffRequest` (bt address, device name, direction)
+- [x] Implement `HandoffReady`
+- [x] Implement `Released`
+- [x] Implement `HandoffDone`
+- [x] Implement `HandoffFailed` (reason code)
+- [x] Implement `Busy`
+- [x] Implement `DeviceList` (list of headphones + owner state)
+- [x] Add `type` string constants and a registry/factory for decoding
+- [x] Add round-trip tests for each message type
 
 ### M1.4 Version & capability negotiation
 - [ ] Define protocol version constant (e.g. `1.0`)
@@ -72,7 +72,7 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 - [ ] Tests for version mismatch handling
 
 ### M1.5 Error codes
-- [ ] Define `HandoffFailureReason` enum: `DEVICE_UNAVAILABLE`, `BUSY`, `TIMEOUT`, `DISCONNECT_FAILED`, `CONNECT_FAILED`, `OUT_OF_RANGE`, `REJECTED`, `UNKNOWN`
+- [x] Define `HandoffFailureReason` enum: `DEVICE_UNAVAILABLE`, `BUSY`, `TIMEOUT`, `DISCONNECT_FAILED`, `CONNECT_FAILED`, `OUT_OF_RANGE`, `REJECTED`, `UNKNOWN`
 - [ ] Map reason codes to user-facing strings (i18n-ready)
 - [ ] Tests for enum serialization
 
@@ -87,18 +87,18 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 - [ ] Unit tests for cert generation determinism/format
 
 ### M2.2 Pairing data model
-- [ ] Define `Peer` model: id, name, address, cert fingerprint, pairedAt
-- [ ] Define `PairingStore` interface (load/save/list/remove)
-- [ ] Implement file-backed store for desktop
+- [x] Define `Peer` model: id, name, address, cert fingerprint, pairedAt
+- [x] Define `PairingStore` interface (load/save/list/remove)
+- [x] Implement file-backed store for desktop
 - [ ] Implement shared-prefs/secure-storage-backed store for Android
 - [ ] Tests for store CRUD
 
 ### M2.3 QR code pairing flow
-- [ ] Generate QR payload: address, port, cert fingerprint, one-time secret
+- [x] Generate QR payload: address, port, cert fingerprint, one-time secret
 - [ ] Desktop: render QR code in pairing window (use `qr_flutter` or native)
 - [ ] Phone: scan QR via camera plugin
-- [ ] Validate QR payload schema and expiry (2 min)
-- [ ] Tests for payload encode/decode + expiry
+- [x] Validate QR payload schema and expiry (2 min)
+- [x] Tests for payload encode/decode + expiry
 
 ### M2.4 Pairing handshake
 - [ ] Implement TCP connect + TLS with cert pinning
@@ -142,9 +142,9 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 - [ ] Reconnect with exponential backoff (1s,2s,4s,... capped 30s)
 
 ### M3.3 Discovery service abstraction
-- [ ] Define `DiscoveryService` interface in protocol/core
-- [ ] Provide mDNS impl + manual impl
-- [ ] Emit unified `PeerDiscovered` events
+- [x] Define `DiscoveryService` interface in protocol/core
+- [x] Provide mDNS impl + manual impl
+- [x] Emit unified `PeerDiscovered` events
 - [ ] Tests for event stream
 
 ---
@@ -152,14 +152,14 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 ## M4 — Transport Layer
 
 ### M4.1 TCP connection manager
-- [ ] Implement connection establishment (client side)
-- [ ] Implement accept loop (server side)
+- [x] Implement connection establishment (client side)
+- [x] Implement accept loop (server side)
 - [ ] Wrap socket in TLS
-- [ ] Length-prefixed JSON framing read/write
+- [x] Length-prefixed JSON framing read/write
 - [ ] Message id dedup / correlation
 - [ ] Heartbeat every 10 s
 - [ ] Detect dead connection (missed heartbeats) and reconnect
-- [ ] Graceful close
+- [x] Graceful close
 
 ### M4.2 Connection state machine
 - [ ] States: `disconnected`, `connecting`, `handshaking`, `connected`, `reconnecting`
@@ -183,22 +183,22 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 ## M5 — Handoff State Machine
 
 ### M5.1 Core state machine
-- [ ] Define states: IDLE, REQUESTED, PEER_READY, RELEASING, RELEASED, CONNECTING, ACTIVE, ROLLBACK
-- [ ] Implement transitions per design §2.3
-- [ ] Enforce single in-flight handoff per headphone (lock)
-- [ ] Reject new request during active handoff with `BUSY`
+- [x] Define states: IDLE, REQUESTED, PEER_READY, RELEASING, RELEASED, CONNECTING, ACTIVE, ROLLBACK
+- [x] Implement transitions per design §2.3
+- [x] Enforce single in-flight handoff per headphone (lock)
+- [x] Reject new request during active handoff with `BUSY`
 - [ ] Resolve conflicts: lower device ID loses; return `BUSY`
-- [ ] Timeout handling (default 10 s) -> ROLLBACK
-- [ ] Tests for happy path both directions
+- [x] Timeout handling (default 10 s) -> ROLLBACK
+- [x] Tests for happy path both directions
 
 ### M5.2 Handoff orchestrator (initiator side)
-- [ ] Send `HANDOFF_REQUEST`
-- [ ] Await `HANDOFF_READY` with timeout
-- [ ] Disconnect headphones locally
-- [ ] Send `RELEASED`
-- [ ] Await `HANDOFF_DONE` with timeout
-- [ ] On timeout/failure -> rollback (reconnect locally)
-- [ ] Emit progress events for UI
+- [x] Send `HANDOFF_REQUEST`
+- [x] Await `HANDOFF_READY` with timeout
+- [x] Disconnect headphones locally
+- [x] Send `RELEASED`
+- [x] Await `HANDOFF_DONE` with timeout
+- [x] On timeout/failure -> rollback (reconnect locally)
+- [x] Emit progress events for UI
 
 ### M5.3 Handoff handler (receiver side)
 - [ ] On `HANDOFF_REQUEST`: validate peer paired, device known
@@ -232,20 +232,20 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 ## M6 — Mock Platform Layer & Tests
 
 ### M6.1 Bluetooth abstraction interface
-- [ ] Define `BluetoothController` interface: listDevices, isConnected, connect, disconnect, setDefaultOutput, isMultipoint
-- [ ] Define `AudioController` interface: pausePlayback, currentOutput, setDefaultOutput
+- [x] Define `BluetoothController` interface: listDevices, isConnected, connect, disconnect, setDefaultOutput, isMultipoint
+- [x] Define `AudioController` interface: pausePlayback, currentOutput, setDefaultOutput
 - [ ] Define `DeviceIdentity` (id, name, os)
 
 ### M6.2 Fake implementations
-- [ ] `FakeBluetoothController` with in-memory device state
-- [ ] `FakeAudioController`
-- [ ] Simulate connect/disconnect delays and failures
-- [ ] Tests for handoff state machine using fakes (M2 milestone in design)
+- [x] `FakeBluetoothController` with in-memory device state
+- [x] `FakeAudioController`
+- [x] Simulate connect/disconnect delays and failures
+- [x] Tests for handoff state machine using fakes (M2 milestone in design)
 
 ### M6.3 Integration tests
-- [ ] End-to-end handoff test phone->computer with fakes
+- [x] End-to-end handoff test phone->computer with fakes
 - [ ] End-to-end reverse direction
-- [ ] Failure injection tests (disconnect fail, connect fail, timeout)
+- [x] Failure injection tests (disconnect fail, connect fail, timeout)
 - [ ] Concurrency test (simultaneous requests)
 
 ---

@@ -147,3 +147,40 @@ class ReconnectingTransport {
     _conn = null;
   }
 }
+
+/// TLS server (uses a [SecurityContext] with the device certificate).
+class BatonTlsServer {
+  BatonTlsServer({required this.port, required this.securityContext});
+
+  final int port;
+  final SecurityContext securityContext;
+  SecureServerSocket? _server;
+
+  Future<void> start(void Function(TransportConnection conn) onConnect) async {
+    _server = await SecureServerSocket.bind(
+      InternetAddress.anyIPv4,
+      port,
+      securityContext,
+    );
+    _server!.listen((socket) {
+      onConnect(TransportConnection(socket));
+    });
+  }
+
+  Future<void> stop() async {
+    await _server?.close();
+    _server = null;
+  }
+}
+
+/// TLS client.
+class BatonTlsClient {
+  static Future<TransportConnection> connect(
+    String host,
+    int port, {
+    SecurityContext? context,
+  }) async {
+    final socket = await SecureSocket.connect(host, port, context: context);
+    return TransportConnection(socket);
+  }
+}

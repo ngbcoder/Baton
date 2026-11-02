@@ -22,6 +22,7 @@ class PairingManager {
   final Duration pairingTimeout;
 
   final _uuid = const Uuid();
+  final Set<String> _revoked = <String>{};
 
   QrPayload createQr(String host, int port) {
     return QrPayload(
@@ -73,6 +74,16 @@ class PairingManager {
     );
     await store.add(peer);
     return peer;
+  }
+
+  bool isRevoked(String certFingerprint) => _revoked.contains(certFingerprint);
+
+  Future<void> revokePeer(String peerId) async {
+    final peer = await store.get(peerId);
+    if (peer != null) {
+      _revoked.add(peer.certFingerprint);
+    }
+    await store.remove(peerId);
   }
 
   Future<Peer> pairAsResponder(

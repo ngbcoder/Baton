@@ -192,7 +192,7 @@ baton/
 
 &#x20; android/      Flutter app + Kotlin platform plugin
 
-&#x20; desktop/      Flutter desktop app (Windows + Linux), tray + settings
+&#x20; desktop/      Go desktop client (Windows + Linux), tray + settings
 
 &#x20; docs/         this file and protocol notes
 
@@ -480,7 +480,7 @@ After handoff works, Baton can stream audio between devices:
 
 \- Which Android disconnect strategy is acceptable as the default (Shizuku vs. fallback only)?
 
-\- Should the desktop client be Flutter or a lighter native daemon plus a UI?
+\- Desktop client is Go (decided).
 
 \- How should multiple computers be prioritized when more than one is eligible?
 

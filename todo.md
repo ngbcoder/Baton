@@ -253,7 +253,7 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 ## M7 — Linux Desktop Client
 
 ### M7.1 Project scaffold
-- [ ] Create `desktop/` Flutter app with Linux target enabled
+- [x] Create `desktop/` Go module (Windows + Linux)
 - [ ] Add `baton_protocol` dependency
 - [ ] Configure window/tray plugins
 - [ ] Build runs on Linux dev machine
@@ -291,7 +291,7 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 ## M8 — Windows Desktop Client
 
 ### M8.1 Project scaffold
-- [ ] Enable Windows target in `desktop/`
+- [x] Go module builds on Windows
 - [ ] Add Win32 FFI bindings
 - [ ] Build runs on Windows dev machine
 

@@ -274,6 +274,104 @@ class DeviceList extends Message {
 }
 
 // ---------------------------------------------------------------------------
+// PAIRING
+// ---------------------------------------------------------------------------
+
+class PairRequest extends Message {
+  static const String kType = 'PAIR_REQUEST';
+
+  final String deviceName;
+  final String certFingerprint;
+  final String secret;
+
+  PairRequest({
+    required String id,
+    required int ts,
+    required this.deviceName,
+    required this.certFingerprint,
+    required this.secret,
+  }) : super(id: id, ts: ts);
+
+  @override
+  String get type => kType;
+
+  @override
+  Map<String, dynamic> toJson() => envelope(<String, dynamic>{
+        'deviceName': deviceName,
+        'certFingerprint': certFingerprint,
+        'secret': secret,
+      });
+
+  factory PairRequest.fromJson(Map<String, dynamic> json) => PairRequest(
+        id: json['id'] as String,
+        ts: json['ts'] as int,
+        deviceName: json['deviceName'] as String,
+        certFingerprint: json['certFingerprint'] as String,
+        secret: json['secret'] as String,
+      );
+}
+
+class PairAccept extends Message {
+  static const String kType = 'PAIR_ACCEPT';
+
+  final String deviceName;
+  final String certFingerprint;
+  final String confirmationCode;
+
+  PairAccept({
+    required String id,
+    required int ts,
+    required this.deviceName,
+    required this.certFingerprint,
+    required this.confirmationCode,
+  }) : super(id: id, ts: ts);
+
+  @override
+  String get type => kType;
+
+  @override
+  Map<String, dynamic> toJson() => envelope(<String, dynamic>{
+        'deviceName': deviceName,
+        'certFingerprint': certFingerprint,
+        'confirmationCode': confirmationCode,
+      });
+
+  factory PairAccept.fromJson(Map<String, dynamic> json) => PairAccept(
+        id: json['id'] as String,
+        ts: json['ts'] as int,
+        deviceName: json['deviceName'] as String,
+        certFingerprint: json['certFingerprint'] as String,
+        confirmationCode: json['confirmationCode'] as String,
+      );
+}
+
+class PairConfirm extends Message {
+  static const String kType = 'PAIR_CONFIRM';
+
+  final String confirmationCode;
+
+  PairConfirm({
+    required String id,
+    required int ts,
+    required this.confirmationCode,
+  }) : super(id: id, ts: ts);
+
+  @override
+  String get type => kType;
+
+  @override
+  Map<String, dynamic> toJson() => envelope(<String, dynamic>{
+        'confirmationCode': confirmationCode,
+      });
+
+  factory PairConfirm.fromJson(Map<String, dynamic> json) => PairConfirm(
+        id: json['id'] as String,
+        ts: json['ts'] as int,
+        confirmationCode: json['confirmationCode'] as String,
+      );
+}
+
+// ---------------------------------------------------------------------------
 // HEARTBEAT
 // ---------------------------------------------------------------------------
 
@@ -306,4 +404,7 @@ void registerAllMessageTypes() {
   Message.register(Busy.kType, Busy.fromJson);
   Message.register(DeviceList.kType, DeviceList.fromJson);
   Message.register(Heartbeat.kType, Heartbeat.fromJson);
+  Message.register(PairRequest.kType, PairRequest.fromJson);
+  Message.register(PairAccept.kType, PairAccept.fromJson);
+  Message.register(PairConfirm.kType, PairConfirm.fromJson);
 }

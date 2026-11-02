@@ -274,6 +274,25 @@ class DeviceList extends Message {
 }
 
 // ---------------------------------------------------------------------------
+// HEARTBEAT
+// ---------------------------------------------------------------------------
+
+class Heartbeat extends Message {
+  static const String kType = 'HEARTBEAT';
+
+  Heartbeat({required String id, required int ts}) : super(id: id, ts: ts);
+
+  @override
+  String get type => kType;
+
+  @override
+  Map<String, dynamic> toJson() => envelope(<String, dynamic>{});
+
+  factory Heartbeat.fromJson(Map<String, dynamic> json) =>
+      Heartbeat(id: json['id'] as String, ts: json['ts'] as int);
+}
+
+// ---------------------------------------------------------------------------
 // Registration
 // ---------------------------------------------------------------------------
 
@@ -286,4 +305,5 @@ void registerAllMessageTypes() {
   Message.register(HandoffFailed.kType, HandoffFailed.fromJson);
   Message.register(Busy.kType, Busy.fromJson);
   Message.register(DeviceList.kType, DeviceList.fromJson);
+  Message.register(Heartbeat.kType, Heartbeat.fromJson);
 }

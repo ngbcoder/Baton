@@ -302,8 +302,8 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 
 ### M8.1 Project scaffold
 - [x] Go module builds on Windows
-- [ ] Add Win32 FFI bindings
-- [ ] Build runs on Windows dev machine
+- [x] Add Win32 FFI bindings (experimental cgo enumeration)
+- [x] Build runs on Windows dev machine
 
 ### M8.2 Bluetooth FFI
 - [ ] Bind `BluetoothSetServiceState` and related APIs

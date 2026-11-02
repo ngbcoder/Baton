@@ -252,21 +252,21 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 
 ## M7 — Android App
 
-### M9.1 Project scaffold
-- [ ] Create `android/` Flutter app
-- [ ] Add `baton_protocol` dependency
-- [ ] Configure Android permissions (Bluetooth, notifications, foreground service)
-- [ ] Build & run on emulator/device
+### M7.1 Project scaffold
+- [x] Create `android/` Flutter app
+- [x] Add `baton_protocol` dependency
+- [x] Configure Android permissions (Bluetooth, notifications, foreground service)
+- [x] Build & run on emulator/device
 
-### M9.2 Kotlin platform channel
-- [ ] Set up MethodChannel + EventChannel
+### M7.2 Kotlin platform channel
+- [x] Set up MethodChannel + EventChannel
 - [ ] Implement foreground service to keep connection alive
 - [ ] Bluetooth state & connected-device detection
 - [ ] Disconnect headphones (strategy selection)
 - [ ] Quick Settings tile service
 - [ ] Expose all to Dart via channel
 
-### M9.3 Disconnect strategy
+### M7.3 Disconnect strategy
 - [ ] Implement multipoint detection (no disconnect needed)
 - [ ] Implement Shizuku-based disconnect (hidden APIs) — optional
 - [ ] Implement ADB-granted permission path
@@ -274,24 +274,24 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 - [ ] User setting to choose strategy
 - [ ] Document trade-offs
 
-### M9.4 Quick Settings tile
+### M7.4 Quick Settings tile
 - [ ] Tile service implementation
 - [ ] Toggle owner of selected headphones
 - [ ] Reflect state in tile icon/label
 - [ ] Handle locked device / permission prompts
 
-### M9.5 Android UX (Flutter)
+### M7.5 Android UX (Flutter)
 - [ ] Home screen: paired computers, current owner per headphone, "Send to computer" button
 - [ ] Settings screen: automatic rules, cooldown, timeout, notification behaviour
 - [ ] Pairing flow (scan QR)
 - [ ] Device list sync
 
-### M9.6 Notifications
+### M7.6 Notifications
 - [ ] Foreground service notification
 - [ ] Success/failure toasts
 - [ ] Incoming call handling hook (M10)
 
-### M9.7 Android packaging
+### M7.7 Android packaging
 - [ ] Release build (signed APK/AAB)
 - [ ] Play Store listing prep (optional v1)
 - [ ] Permission rationale screens
@@ -339,7 +339,7 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 
 ### M7.1 Project scaffold
 - [x] Create `desktop/` Go module (Windows + Linux)
-- [ ] Add `baton_protocol` dependency
+- [x] Add `baton_protocol` dependency
 - [ ] Configure window/tray plugins
 - [ ] Build runs on Linux dev machine
 

@@ -250,82 +250,7 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 
 ---
 
-## M7 — Linux Desktop Client
-
-### M7.1 Project scaffold
-- [x] Create `desktop/` Go module (Windows + Linux)
-- [ ] Add `baton_protocol` dependency
-- [ ] Configure window/tray plugins
-- [ ] Build runs on Linux dev machine
-
-### M7.2 BlueZ integration (D-Bus)
-- [ ] Add D-Bus client library (e.g. `dbus` package)
-- [ ] Enumerate paired Bluetooth devices
-- [ ] Implement `connect` via `org.bluez.Device1.Connect`
-- [ ] Implement `disconnect` via `org.bluez.Device1.Disconnect`
-- [ ] Detect connection state changes via PropertiesChanged signals
-- [ ] Map BlueZ errors to `HandoffFailureReason`
-
-### M7.3 Default sink (PipeWire/PulseAudio)
-- [ ] Detect audio server (PipeWire vs PulseAudio)
-- [ ] Set default sink via `wpctl set-default` (PipeWire)
-- [ ] Fallback to `pactl set-default-sink` (PulseAudio)
-- [ ] Verify device appears before setting default
-- [ ] Retry with backoff if device not yet ready
-
-### M7.4 Tray & UI
-- [ ] System tray icon (StatusNotifier) showing current owner
-- [ ] Click tray to pull headphones here
-- [ ] Small window for pairing, device list, rules
-- [ ] Headless CLI mode (`baton --headless`)
-- [ ] Start-at-login option (systemd user unit or .desktop autostart)
-
-### M7.5 Linux packaging
-- [ ] AppImage build script
-- [ ] .deb build script
-- [ ] Install/uninstall scripts
-- [ ] Test on Ubuntu 22.04+ and Fedora
-
----
-
-## M8 — Windows Desktop Client
-
-### M8.1 Project scaffold
-- [x] Go module builds on Windows
-- [ ] Add Win32 FFI bindings
-- [ ] Build runs on Windows dev machine
-
-### M8.2 Bluetooth FFI
-- [ ] Bind `BluetoothSetServiceState` and related APIs
-- [ ] Enumerate paired devices
-- [ ] Connect by toggling A2DP sink service state
-- [ ] Disconnect
-- [ ] Detect connection state
-- [ ] Map errors to reason codes
-
-### M8.3 Default audio output
-- [ ] Use Windows audio policy API (MMDevice/EndpointVolume) to set default output
-- [ ] Wait for device to appear after connect
-- [ ] Retry with backoff
-
-### M8.4 Tray & startup
-- [ ] Tray icon with owner status and "pull here" action
-- [ ] Start-at-login via registry/Task Scheduler
-- [ ] Pairing window
-
-### M8.5 Validation
-- [ ] Test on Windows 10 and 11
-- [ ] Test with LE Audio devices
-- [ ] Document any device-specific quirks
-
-### M8.6 Windows packaging
-- [ ] MSIX build
-- [ ] Installer (MSI or Inno Setup)
-- [ ] Code signing plan (optional for v1)
-
----
-
-## M9 — Android App
+## M7 — Android App
 
 ### M9.1 Project scaffold
 - [ ] Create `android/` Flutter app
@@ -370,6 +295,81 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 - [ ] Release build (signed APK/AAB)
 - [ ] Play Store listing prep (optional v1)
 - [ ] Permission rationale screens
+
+---
+
+## M8 — Windows Desktop Client
+
+### M8.1 Project scaffold
+- [x] Go module builds on Windows
+- [ ] Add Win32 FFI bindings
+- [ ] Build runs on Windows dev machine
+
+### M8.2 Bluetooth FFI
+- [ ] Bind `BluetoothSetServiceState` and related APIs
+- [ ] Enumerate paired devices
+- [ ] Connect by toggling A2DP sink service state
+- [ ] Disconnect
+- [ ] Detect connection state
+- [ ] Map errors to reason codes
+
+### M8.3 Default audio output
+- [ ] Use Windows audio policy API (MMDevice/EndpointVolume) to set default output
+- [ ] Wait for device to appear after connect
+- [ ] Retry with backoff
+
+### M8.4 Tray & startup
+- [ ] Tray icon with owner status and "pull here" action
+- [ ] Start-at-login via registry/Task Scheduler
+- [ ] Pairing window
+
+### M8.5 Validation
+- [ ] Test on Windows 10 and 11
+- [ ] Test with LE Audio devices
+- [ ] Document any device-specific quirks
+
+### M8.6 Windows packaging
+- [ ] MSIX build
+- [ ] Installer (MSI or Inno Setup)
+- [ ] Code signing plan (optional for v1)
+
+---
+
+## M9 — Linux Desktop Client
+
+### M7.1 Project scaffold
+- [x] Create `desktop/` Go module (Windows + Linux)
+- [ ] Add `baton_protocol` dependency
+- [ ] Configure window/tray plugins
+- [ ] Build runs on Linux dev machine
+
+### M7.2 BlueZ integration (D-Bus)
+- [ ] Add D-Bus client library (e.g. `dbus` package)
+- [ ] Enumerate paired Bluetooth devices
+- [ ] Implement `connect` via `org.bluez.Device1.Connect`
+- [ ] Implement `disconnect` via `org.bluez.Device1.Disconnect`
+- [ ] Detect connection state changes via PropertiesChanged signals
+- [ ] Map BlueZ errors to `HandoffFailureReason`
+
+### M7.3 Default sink (PipeWire/PulseAudio)
+- [ ] Detect audio server (PipeWire vs PulseAudio)
+- [ ] Set default sink via `wpctl set-default` (PipeWire)
+- [ ] Fallback to `pactl set-default-sink` (PulseAudio)
+- [ ] Verify device appears before setting default
+- [ ] Retry with backoff if device not yet ready
+
+### M7.4 Tray & UI
+- [ ] System tray icon (StatusNotifier) showing current owner
+- [ ] Click tray to pull headphones here
+- [ ] Small window for pairing, device list, rules
+- [ ] Headless CLI mode (`baton --headless`)
+- [ ] Start-at-login option (systemd user unit or .desktop autostart)
+
+### M7.5 Linux packaging
+- [ ] AppImage build script
+- [ ] .deb build script
+- [ ] Install/uninstall scripts
+- [ ] Test on Ubuntu 22.04+ and Fedora
 
 ---
 

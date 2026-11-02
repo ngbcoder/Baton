@@ -1,0 +1,13 @@
+# Flutter/Dart
+.dart_tool/
+build/
+*.lock
+# Android
+android/android/
+android/.gradle/
+android/.kotlin/
+# Go
+desktop/*.exe
+desktop/*.test
+# OS
+.DS_Store

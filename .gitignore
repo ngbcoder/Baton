@@ -3,9 +3,9 @@
 build/
 *.lock
 # Android
-android/android/
-android/.gradle/
-android/.kotlin/
+android/android/build/
+android/android/.gradle/
+android/android/.kotlin/
 # Go
 desktop/*.exe
 desktop/*.test

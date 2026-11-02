@@ -17,7 +17,7 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 ### M0.2 Flutter / Dart toolchain
 - [x] Pin Flutter SDK version in `fvm`/`.tool-versions` or `pubspec` environment
 - [x] Verify `flutter doctor` clean on Windows dev machine (minor SDK warnings)
-- [ ] Verify `flutter doctor` clean on Linux dev machine (or VM)
+- [x] Verify `flutter doctor` clean on Linux dev machine (or VM) (CI ubuntu)
 - [x] Verify Android SDK + emulator available (SDK present)
 - [x] Add `analysis_options.yaml` with strict lint rules at repo root and per-package
 
@@ -25,8 +25,8 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 - [x] Create GitHub Actions workflow: `flutter analyze` + `flutter test` for `protocol/`
 - [x] Create workflow for desktop build (Windows + Linux) on push to main
 - [x] Create workflow for Android APK build
-- [ ] Add artifact upload for builds
-- [ ] Add status badge to README
+- [x] Add artifact upload for builds
+- [x] Add status badge to README
 
 ### M0.4 Shared conventions
 - [x] Define package naming (`baton_protocol`, `baton_core`, etc.) and document

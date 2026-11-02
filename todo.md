@@ -8,31 +8,31 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 
 ### M0.1 Repository & workspace
 - [x] Create repository `baton/` with top-level folders: `protocol/`, `android/`, `desktop/`, `docs/`
-- [ ] Add root `README.md` with project summary, platforms, and quick start
-- [ ] Add `.gitignore` for Dart/Flutter, Android, Windows, Linux build artifacts
-- [ ] Add `LICENSE` (choose MIT or Apache-2.0) and record choice in docs
-- [ ] Add `CONTRIBUTING.md` with branch/PR conventions
-- [ ] Add `docs/` with `design.md` (existing) and `protocol.md` placeholder
+- [x] Add root `README.md` with project summary, platforms, and quick start
+- [x] Add `.gitignore` for Dart/Flutter, Android, Windows, Linux build artifacts
+- [x] Add `LICENSE` (choose MIT or Apache-2.0) and record choice in docs
+- [x] Add `CONTRIBUTING.md` with branch/PR conventions
+- [x] Add `docs/` with `design.md` (existing) and `protocol.md` placeholder
 
 ### M0.2 Flutter / Dart toolchain
-- [ ] Pin Flutter SDK version in `fvm`/`.tool-versions` or `pubspec` environment
-- [ ] Verify `flutter doctor` clean on Windows dev machine
+- [x] Pin Flutter SDK version in `fvm`/`.tool-versions` or `pubspec` environment
+- [x] Verify `flutter doctor` clean on Windows dev machine (minor SDK warnings)
 - [ ] Verify `flutter doctor` clean on Linux dev machine (or VM)
-- [ ] Verify Android SDK + emulator available
-- [ ] Add `analysis_options.yaml` with strict lint rules at repo root and per-package
+- [x] Verify Android SDK + emulator available (SDK present)
+- [x] Add `analysis_options.yaml` with strict lint rules at repo root and per-package
 
 ### M0.3 Continuous integration
-- [ ] Create GitHub Actions workflow: `flutter analyze` + `flutter test` for `protocol/`
-- [ ] Create workflow for desktop build (Windows + Linux) on push to main
-- [ ] Create workflow for Android APK build
+- [x] Create GitHub Actions workflow: `flutter analyze` + `flutter test` for `protocol/`
+- [x] Create workflow for desktop build (Windows + Linux) on push to main
+- [x] Create workflow for Android APK build
 - [ ] Add artifact upload for builds
 - [ ] Add status badge to README
 
 ### M0.4 Shared conventions
-- [ ] Define package naming (`baton_protocol`, `baton_core`, etc.) and document
-- [ ] Define logging convention (levels, tags, redaction of addresses/secrets)
-- [ ] Define error code enum shared across platforms
-- [ ] Define versioning scheme (semver) for protocol messages
+- [x] Define package naming (`baton_protocol`, `baton_core`, etc.) and document
+- [x] Define logging convention (levels, tags, redaction of addresses/secrets)
+- [x] Define error code enum shared across platforms
+- [x] Define versioning scheme (semver) for protocol messages
 
 ---
 

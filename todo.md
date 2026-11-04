@@ -23,8 +23,8 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 
 ### M0.3 Continuous integration
 - [x] Create GitHub Actions workflow: `flutter analyze` + `flutter test` for `protocol/`
-- [x] Create workflow for desktop build (Windows + Linux) on push to main
-- [x] Create workflow for Android APK build
+- [ ] Create workflow for desktop build (Windows + Linux) on push to main
+- [ ] Create workflow for Android APK build
 - [x] Add artifact upload for builds
 - [x] Add status badge to README
 
@@ -89,14 +89,14 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 ### M2.2 Pairing data model
 - [x] Define `Peer` model: id, name, address, cert fingerprint, pairedAt
 - [x] Define `PairingStore` interface (load/save/list/remove)
-- [x] Implement file-backed store for desktop
+- [ ] Implement file-backed store for desktop
 - [x] Implement shared-prefs/secure-storage-backed store for Android (abstraction; platform impl pending)
 - [x] Tests for store CRUD (pairing flow covers)
 
 ### M2.3 QR code pairing flow
 - [x] Generate QR payload: address, port, cert fingerprint, one-time secret
-- [ ] Desktop: render QR code in pairing window (use `qr_flutter` or native)
-- [ ] Phone: scan QR via camera plugin
+- [x] Desktop: render QR code in pairing window (use `qr_flutter` or native)
+- [x] Phone: scan QR via camera plugin
 - [x] Validate QR payload schema and expiry (2 min)
 - [x] Tests for payload encode/decode + expiry
 
@@ -137,15 +137,15 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 
 ### M3.2 Manual fallback
 - [ ] Manual IP + port entry UI and validation
-- [ ] QR code fallback at pairing time (already in M2.3)
+- [x] QR code fallback at pairing time (already in M2.3)
 - [ ] Persist last-known address per peer for reconnect
-- [ ] Reconnect with exponential backoff (1s,2s,4s,... capped 30s)
+- [x] Reconnect with exponential backoff (1s,2s,4s,... capped 30s)
 
 ### M3.3 Discovery service abstraction
 - [x] Define `DiscoveryService` interface in protocol/core
 - [x] Provide mDNS impl + manual impl
 - [x] Emit unified `PeerDiscovered` events
-- [ ] Tests for event stream
+- [x] Tests for event stream
 
 ---
 
@@ -154,7 +154,7 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 ### M4.1 TCP connection manager
 - [x] Implement connection establishment (client side)
 - [x] Implement accept loop (server side)
-- [ ] Wrap socket in TLS
+- [x] Wrap socket in TLS
 - [x] Length-prefixed JSON framing read/write
 - [ ] Message id dedup / correlation
 - [ ] Heartbeat every 10 s
@@ -201,31 +201,31 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 - [x] Emit progress events for UI
 
 ### M5.3 Handoff handler (receiver side)
-- [ ] On `HANDOFF_REQUEST`: validate peer paired, device known
-- [ ] Check availability (awake, in range, paired)
-- [ ] Reply `HANDOFF_READY` or `HANDOFF_FAILED`/`BUSY`
-- [ ] On `RELEASED`: connect to headphones, set default output
-- [ ] Send `HANDOFF_DONE` on success or `HANDOFF_FAILED` on error
-- [ ] Tests
+- [x] On `HANDOFF_REQUEST`: validate peer paired, device known
+- [x] Check availability (awake, in range, paired)
+- [x] Reply `HANDOFF_READY` or `HANDOFF_FAILED`/`BUSY`
+- [x] On `RELEASED`: connect to headphones, set default output
+- [x] Send `HANDOFF_DONE` on success or `HANDOFF_FAILED` on error
+- [x] Tests
 
 ### M5.4 Rollback logic
-- [ ] Reconnect original owner to headphones
-- [ ] Set default output back
-- [ ] Emit rollback event + user notification
+- [x] Reconnect original owner to headphones
+- [x] Set default output back
+- [x] Emit rollback event + user notification
 - [ ] Handle rollback failure (retry + alert)
-- [ ] Tests for each failure case in §7
+- [x] Tests for each failure case in §7
 
 ### M5.5 Multipoint shortcut detection
-- [ ] Detect headphones connected to both devices simultaneously
-- [ ] If multipoint: skip disconnect; pause playback on old device; switch default output on new
-- [ ] Prefer multipoint path when available
-- [ ] Tests for multipoint path
+- [x] Detect headphones connected to both devices simultaneously
+- [x] If multipoint: skip disconnect; pause playback on old device; switch default output on new
+- [x] Prefer multipoint path when available
+- [x] Tests for multipoint path
 
 ### M5.6 Cooldown & automatic rule gating
-- [ ] Per-headphone cooldown timer (default 30 s)
-- [ ] Gate automatic triggers behind cooldown
+- [x] Per-headphone cooldown timer (default 30 s)
+- [x] Gate automatic triggers behind cooldown
 - [ ] Manual triggers bypass cooldown? (decide; document)
-- [ ] Tests
+- [x] Tests
 
 ---
 
@@ -259,12 +259,12 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 - [x] Build & run on emulator/device
 
 ### M7.2 Kotlin platform channel
-- [x] Set up MethodChannel + EventChannel
-- [ ] Implement foreground service to keep connection alive
-- [ ] Bluetooth state & connected-device detection
+- [x] Set up MethodChannel (EventChannel pending)
+- [x] Implement foreground service to keep connection alive
+- [x] Bluetooth state & connected-device detection
 - [ ] Disconnect headphones (strategy selection)
-- [ ] Quick Settings tile service
-- [ ] Expose all to Dart via channel
+- [x] Quick Settings tile service
+- [x] Expose all to Dart via channel
 
 ### M7.3 Disconnect strategy
 - [ ] Implement multipoint detection (no disconnect needed)
@@ -275,20 +275,20 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 - [ ] Document trade-offs
 
 ### M7.4 Quick Settings tile
-- [ ] Tile service implementation
+- [x] Tile service implementation
 - [ ] Toggle owner of selected headphones
 - [ ] Reflect state in tile icon/label
 - [ ] Handle locked device / permission prompts
 
 ### M7.5 Android UX (Flutter)
-- [ ] Home screen: paired computers, current owner per headphone, "Send to computer" button
-- [ ] Settings screen: automatic rules, cooldown, timeout, notification behaviour
-- [ ] Pairing flow (scan QR)
+- [x] Home screen: paired computers, current owner per headphone, "Send to computer" button
+- [x] Settings screen: automatic rules, cooldown, timeout, notification behaviour
+- [x] Pairing flow (scan QR)
 - [ ] Device list sync
 
 ### M7.6 Notifications
-- [ ] Foreground service notification
-- [ ] Success/failure toasts
+- [x] Foreground service notification
+- [x] Success/failure toasts
 - [ ] Incoming call handling hook (M10)
 
 ### M7.7 Android packaging
@@ -306,12 +306,12 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 - [x] Build runs on Windows dev machine
 
 ### M8.2 Bluetooth FFI
-- [ ] Bind `BluetoothSetServiceState` and related APIs
-- [ ] Enumerate paired devices
-- [ ] Connect by toggling A2DP sink service state
-- [ ] Disconnect
-- [ ] Detect connection state
-- [ ] Map errors to reason codes
+- [x] Bind `BluetoothSetServiceState` and related APIs (via syscall, no CGO)
+- [x] Enumerate paired devices
+- [x] Connect by toggling A2DP sink service state
+- [x] Disconnect
+- [x] Detect connection state
+- [x] Map errors to reason codes
 
 ### M8.3 Default audio output
 - [ ] Use Windows audio policy API (MMDevice/EndpointVolume) to set default output
@@ -321,7 +321,7 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 ### M8.4 Tray & startup
 - [ ] Tray icon with owner status and "pull here" action
 - [ ] Start-at-login via registry/Task Scheduler
-- [ ] Pairing window
+- [x] Pairing window
 
 ### M8.5 Validation
 - [ ] Test on Windows 10 and 11
@@ -337,13 +337,13 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 
 ## M9 — Linux Desktop Client
 
-### M7.1 Project scaffold
+### M9.1 Project scaffold
 - [x] Create `desktop/` Go module (Windows + Linux)
-- [x] Add `baton_protocol` dependency
-- [ ] Configure window/tray plugins
+- [ ] Add `baton_protocol` dependency
+- [x] Configure window/tray plugins
 - [ ] Build runs on Linux dev machine
 
-### M7.2 BlueZ integration (D-Bus)
+### M9.2 BlueZ integration (D-Bus)
 - [ ] Add D-Bus client library (e.g. `dbus` package)
 - [ ] Enumerate paired Bluetooth devices
 - [ ] Implement `connect` via `org.bluez.Device1.Connect`
@@ -351,21 +351,21 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 - [ ] Detect connection state changes via PropertiesChanged signals
 - [ ] Map BlueZ errors to `HandoffFailureReason`
 
-### M7.3 Default sink (PipeWire/PulseAudio)
+### M9.3 Default sink (PipeWire/PulseAudio)
 - [ ] Detect audio server (PipeWire vs PulseAudio)
 - [ ] Set default sink via `wpctl set-default` (PipeWire)
 - [ ] Fallback to `pactl set-default-sink` (PulseAudio)
 - [ ] Verify device appears before setting default
 - [ ] Retry with backoff if device not yet ready
 
-### M7.4 Tray & UI
+### M9.4 Tray & UI
 - [ ] System tray icon (StatusNotifier) showing current owner
 - [ ] Click tray to pull headphones here
-- [ ] Small window for pairing, device list, rules
-- [ ] Headless CLI mode (`baton --headless`)
+- [x] Small window for pairing, device list, rules
+- [x] Headless CLI mode (`baton --headless`)
 - [ ] Start-at-login option (systemd user unit or .desktop autostart)
 
-### M7.5 Linux packaging
+### M9.5 Linux packaging
 - [ ] AppImage build script
 - [ ] .deb build script
 - [ ] Install/uninstall scripts
@@ -410,19 +410,19 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 ### M11.1 Failure cases (§7)
 - [ ] Computer asleep/unreachable: fail fast, headphones stay on phone
 - [ ] Disconnect fails on Android: report failure, stay on phone
-- [ ] Computer connect fails: phone reconnects after timeout
+- [x] Computer connect fails: phone reconnects after timeout
 - [ ] Headphones out of range: fail with `DEVICE_UNAVAILABLE`
 - [ ] Both sides request at once: lower device ID loses; `BUSY`
-- [ ] Connection drops mid-handoff: timeout then rollback
+- [x] Connection drops mid-handoff: timeout then rollback
 
 ### M11.2 User feedback
-- [ ] Toast/notification on success
-- [ ] Clear error with reason on failure
-- [ ] Automatic rollback message
+- [x] Toast/notification on success
+- [x] Clear error with reason on failure
+- [x] Automatic rollback message
 - [ ] Retry affordance in UI
 
 ### M11.3 Resilience
-- [ ] Reconnect with backoff for dropped transport
+- [x] Reconnect with backoff for dropped transport
 - [ ] Idempotent connect/disconnect calls
 - [ ] State recovery after process restart (best-effort)
 
@@ -431,13 +431,13 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 ## M12 — UX Polish
 
 ### M12.1 Onboarding
-- [ ] First-run wizard: name device, permissions, pairing
-- [ ] Explain prerequisite (headphones paired with both devices)
-- [ ] Show multipoint tip
+- [x] First-run wizard: name device, permissions, pairing
+- [x] Explain prerequisite (headphones paired with both devices)
+- [x] Show multipoint tip
 
 ### M12.2 Settings
-- [ ] All toggles wired (rules, cooldown, timeout, notifications, disconnect strategy)
-- [ ] Persist settings (shared prefs / config file)
+- [x] All toggles wired (rules, cooldown, timeout, notifications, disconnect strategy)
+- [x] Persist settings (shared prefs / config file)
 - [ ] Export/import settings (optional)
 
 ### M12.3 Accessibility & localization
@@ -447,8 +447,8 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 
 ### M12.4 Visual design
 - [ ] App icon + tray icon assets
-- [ ] Consistent theming (light/dark)
-- [ ] Empty states and loading indicators
+- [x] Consistent theming (light/dark)
+- [x] Empty states and loading indicators
 
 ---
 
@@ -503,6 +503,50 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 - [ ] Mode toggle in UI
 - [ ] Latency/quality settings
 - [ ] Device selection
+
+---
+
+## M15 — File Transfer (Future)
+
+### M15.1 Protocol messages
+- [ ] Define `FileOffer` (name, size, mime, checksum)
+- [ ] Define `FileAccept` / `FileReject`
+- [ ] Define `FileChunk` (offset, bytes, eof)
+- [ ] Define `FileDone` / `FileFailed` (reason)
+- [ ] Add message type constants + factory registration
+- [ ] Round-trip tests for each new message
+
+### M15.2 Transfer engine
+- [ ] Chunked streaming with configurable chunk size
+- [ ] Progress events for UI
+- [ ] Resume / retry on failure
+- [ ] Integrity check (hash) on completion
+- [ ] Concurrency limits and backpressure
+
+### M15.3 Transport & storage
+- [ ] Reuse existing TLS TCP transport for chunks
+- [ ] Stream to temp file then atomic move
+- [ ] Handle large files without loading into memory
+
+### M15.4 Security
+- [ ] Require paired peer + pinned cert
+- [ ] User confirmation before receive
+- [ ] Size limits and path sanitization
+- [ ] Malware/extension warnings (optional)
+
+### M15.5 Desktop UX
+- [ ] Send file via tray/menu or drag-and-drop
+- [ ] Incoming transfer prompt + progress
+- [ ] Transfer history / notifications
+
+### M15.6 Android UX
+- [ ] Share sheet integration to send files
+- [ ] Incoming transfer notification + save location
+- [ ] Progress UI
+
+### M15.7 Packaging & docs
+- [ ] Document file transfer protocol
+- [ ] Update installers if new permissions needed
 
 ---
 

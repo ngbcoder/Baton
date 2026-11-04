@@ -20,6 +20,8 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"github.com/ngbcoder/baton/desktop/protocol"
+
+	"github.com/skip2/go-qrcode"
 )
 
 // ---------------------------------------------------------------------------
@@ -70,11 +72,8 @@ type mockBluetooth struct {
 
 func newMockBluetooth() *mockBluetooth {
 	return &mockBluetooth{
-		devices: []protocol.BtDevice{
-			{Address: "74:A3:4A:88:99:BC", Name: "Sony WH-1000XM5"},
-			{Address: "DD:EE:FF:44:55:66", Name: "QuietComfort Ultra"},
-		},
-		conn: map[string]bool{"74:A3:4A:88:99:BC": true},
+		devices: []protocol.BtDevice{},
+		conn:    map[string]bool{},
 	}
 }
 
@@ -540,7 +539,19 @@ func qrWidget(gtx layout.Context, mods [][]bool) layout.Dimensions {
 		}
 	}
 	const margin = 2
-	cell := gtx.Dp(5)
+	// Scale the cell size so the QR code fits in the available width.
+	maxW := gtx.Constraints.Max.X
+	if maxW <= 0 || maxW > gtx.Dp(280) {
+		maxW = gtx.Dp(280)
+	}
+	cellPx := maxW / (cols + 2*margin)
+	if cellPx < 2 {
+		cellPx = 2
+	}
+	if cellPx > 6 {
+		cellPx = 6
+	}
+	cell := cellPx
 	w := (cols + 2*margin) * cell
 	h := (len(mods) + 2*margin) * cell
 	paint.FillShape(gtx.Ops, colWhite, clip.UniformRRect(image.Rect(0, 0, w, h), gtx.Dp(12)).Op(gtx.Ops))
@@ -602,15 +613,15 @@ func runGioui(w *app.Window) error {
 		peer:      "Pixel 8 Pro",
 		pairing:   "No active pairing session",
 		code:      "--- ---",
-		device:    "Sony WH-1000XM5",
-		addr:      "74:A3:4A:88:99:BC",
+		device:    "No paired headphones",
+		addr:      "",
 	}
 
 	plog := newProtoLog(200)
 	plog.Add("// Persistent TCP session ready. Waiting for peer.")
 
-	bt := newMockBluetooth()
-	audio := &mockAudio{}
+	bt := defaultBluetooth()
+	audio := defaultAudio()
 
 	var hc *protocol.HandoffController
 	sendFn := func(peerID string, msg map[string]any) error {
@@ -777,13 +788,18 @@ func runGioui(w *app.Window) error {
 						ExpiresAt:       time.Now().Add(2 * time.Minute),
 					}
 					enc, _ := qr.Encode()
-					ascii, _ := protocol.RenderQrAscii(enc)
+					qrCode, err := qrcode.New(enc, qrcode.Medium)
+					if err != nil {
+						plog.Add("qr render error: " + err.Error())
+						return
+					}
+					mods := qrCode.Bitmap()
 					code := protocol.ComputeConfirmationCode(cert.Fingerprint)
 					if len(code) == 6 {
 						code = code[:3] + " " + code[3:]
 					}
 					st.update(func(d *uiData) {
-						d.qr = parseQR(ascii)
+						d.qr = mods
 						d.code = code
 						d.pairing = "Waiting for the phone to scan. Expires in 2 minutes."
 					})

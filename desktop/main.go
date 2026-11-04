@@ -9,17 +9,31 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		RunGUI()
+	minimized := false
+	args := os.Args[1:]
+	for _, a := range args {
+		if a == "--minimized" {
+			minimized = true
+		}
+	}
+	// strip flags for command parsing
+	var cmdArgs []string
+	for _, a := range args {
+		if a != "--minimized" {
+			cmdArgs = append(cmdArgs, a)
+		}
+	}
+	if len(cmdArgs) == 0 {
+		RunGUI(minimized)
 		return
 	}
-	switch os.Args[1] {
+	switch cmdArgs[0] {
 	case "gui":
-		RunGUI()
+		RunGUI(false)
 	case "serve":
 		addr := ":4040"
-		if len(os.Args) > 2 {
-			addr = os.Args[2]
+		if len(cmdArgs) > 1 {
+			addr = cmdArgs[1]
 		}
 		ts, err := protocol.ListenAndServe(addr, func(c *protocol.TransportConnection) {
 			go func() {
@@ -41,28 +55,28 @@ func main() {
 		fmt.Println("serving on", addr)
 		select {}
 	case "qr":
-		if len(os.Args) < 3 {
+		if len(cmdArgs) < 2 {
 			fmt.Println("usage: baton qr <text>")
 			return
 		}
-		out, err := protocol.RenderQrAscii(os.Args[2])
+		out, err := protocol.RenderQrAscii(cmdArgs[1])
 		if err != nil {
 			fmt.Println("qr error:", err)
 			return
 		}
 		fmt.Println(out)
 	case "connect":
-		if len(os.Args) < 3 {
+		if len(cmdArgs) < 2 {
 			fmt.Println("usage: baton connect <addr>")
 			return
 		}
-		c, err := protocol.Dial(os.Args[2])
+		c, err := protocol.Dial(cmdArgs[1])
 		if err != nil {
 			fmt.Println("connect error:", err)
 			return
 		}
 		defer c.Close()
-		fmt.Println("connected to", os.Args[2])
+		fmt.Println("connected to", cmdArgs[1])
 		c.Send(protocol.NewHeartbeat())
 		for {
 			m, err := c.Receive()
@@ -85,8 +99,8 @@ func main() {
 		}
 	case "pair":
 		addr := "0.0.0.0:4040"
-		if len(os.Args) > 2 {
-			addr = os.Args[2]
+		if len(cmdArgs) > 1 {
+			addr = cmdArgs[1]
 		}
 		secret := "baton-pairing-secret-777"
 		cert, err := protocol.GenerateSelfSignedCert("Baton Desktop")

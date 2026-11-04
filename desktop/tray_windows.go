@@ -3,6 +3,8 @@
 package main
 
 import (
+	"os"
+	"os/exec"
 	"syscall"
 	"unsafe"
 )
@@ -12,24 +14,24 @@ var (
 	shell32  = syscall.NewLazyDLL("shell32.dll")
 	kernel32 = syscall.NewLazyDLL("kernel32.dll")
 
-	procRegisterClassExW   = user32.NewProc("RegisterClassExW")
-	procCreateWindowExW    = user32.NewProc("CreateWindowExW")
-	procDefWindowProcW     = user32.NewProc("DefWindowProcW")
-	procGetMessageW        = user32.NewProc("GetMessageW")
-	procTranslateMessage   = user32.NewProc("TranslateMessage")
-	procDispatchMessageW   = user32.NewProc("DispatchMessageW")
-	procLoadIconW          = user32.NewProc("LoadIconW")
-	procPostQuitMessage    = user32.NewProc("PostQuitMessage")
-	procShellNotifyIconW   = shell32.NewProc("Shell_NotifyIconW")
-	procGetModuleHandleW   = kernel32.NewProc("GetModuleHandleW")
+	procRegisterClassExW = user32.NewProc("RegisterClassExW")
+	procCreateWindowExW  = user32.NewProc("CreateWindowExW")
+	procDefWindowProcW   = user32.NewProc("DefWindowProcW")
+	procGetMessageW      = user32.NewProc("GetMessageW")
+	procTranslateMessage = user32.NewProc("TranslateMessage")
+	procDispatchMessageW = user32.NewProc("DispatchMessageW")
+	procLoadIconW        = user32.NewProc("LoadIconW")
+	procPostQuitMessage  = user32.NewProc("PostQuitMessage")
+	procShellNotifyIconW = shell32.NewProc("Shell_NotifyIconW")
+	procGetModuleHandleW = kernel32.NewProc("GetModuleHandleW")
 )
 
 const (
-	WM_CLOSE      = 0x0010
-	WM_DESTROY    = 0x0002
-	WM_TRAYICON   = 0x0400 + 1
-	WM_RBUTTONUP  = 0x0205
-	WM_LBUTTONUP  = 0x0202
+	WM_CLOSE     = 0x0010
+	WM_DESTROY   = 0x0002
+	WM_TRAYICON  = 0x0400 + 1
+	WM_RBUTTONUP = 0x0205
+	WM_LBUTTONUP = 0x0202
 
 	NIM_ADD     = 0x00000000
 	NIM_DELETE  = 0x00000002
@@ -82,7 +84,10 @@ var trayHwnd uintptr
 
 func trayWndProc(hwnd, message, wParam, lParam uintptr) uintptr {
 	if message == WM_TRAYICON {
-		// no-op; icon is status only
+		if minimizedMode && lParam == WM_LBUTTONUP {
+			exe, _ := os.Executable()
+			_ = exec.Command(exe, "gui").Start()
+		}
 	}
 	if message == WM_DESTROY {
 		procPostQuitMessage.Call(0)

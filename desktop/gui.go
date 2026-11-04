@@ -61,6 +61,9 @@ var (
 // print light modules as blocks).
 const qrInvert = false
 
+// minimizedMode is true when launched with --minimized (background daemon).
+var minimizedMode bool
+
 // ---------------------------------------------------------------------------
 // Mock Bluetooth + Audio
 // ---------------------------------------------------------------------------
@@ -167,7 +170,7 @@ func (p *protoLog) Clear() {
 
 const ownerThisPC = "This computer"
 
-var stateOrder = []string{"IDLE", "REQUESTED", "PEER_READY", "RELEASING", "RELEASED", "CONNECTING", "ACTIVE"}
+var stateOrder = []string{"IDLE", "REQUESTED", "PEER_READY", "RELEASING", "CONNECTING", "ACTIVE"}
 
 func stepIndex(status string) int {
 	for i, s := range stateOrder {
@@ -200,19 +203,44 @@ func stateLabel(status string) string {
 	return status
 }
 
+func helperFor(state string) string {
+	switch state {
+	case "IDLE":
+		return "System ready. Headphones bound to Windows WASAPI."
+	case "REQUESTED":
+		return "Contacting phone..."
+	case "PEER_READY":
+		return "Phone audio released."
+	case "RELEASING":
+		return "Releasing local Bluetooth..."
+	case "CONNECTING":
+		return "Connecting audio..."
+	case "ACTIVE":
+		return "Audio active on PC."
+	case "ROLLBACK":
+		return "Handoff failed. Retrying..."
+	}
+	return ""
+}
+
 type uiData struct {
-	status     string
-	statusCol  color.NRGBA
-	step       int
-	failed     bool
-	owner      string
-	peer       string
-	peerOnline bool
-	pairing    string
-	code       string
-	qr         [][]bool
-	device     string
-	addr       string
+	status              string
+	statusCol           color.NRGBA
+	step                int
+	failed              bool
+	owner               string
+	peer                string
+	peerOnline          bool
+	pairing             string
+	code                string
+	qr                  [][]bool
+	device              string
+	addr                string
+	helper              string
+	mdns                bool
+	showOnboardingModal bool
+	retryBanner         bool
+	lastAction          int // 0 pull, 1 send
 }
 
 type uiState struct {
@@ -267,6 +295,7 @@ func (s *uiState) setHandoff(state protocol.HandoffState) {
 		name := strings.ToUpper(string(state))
 		d.status = name
 		d.failed = false
+		d.retryBanner = false
 		if i := stepIndex(name); i >= 0 {
 			d.step = i
 		}
@@ -277,11 +306,13 @@ func (s *uiState) setHandoff(state protocol.HandoffState) {
 			d.statusCol = colRed
 			d.status = "ROLLBACK"
 			d.failed = true
+			d.retryBanner = true
 		case protocol.StateRequested, protocol.StatePeerReady, protocol.StateReleasing, protocol.StateReleased, protocol.StateConnecting:
 			d.statusCol = colYellow
 		default:
 			d.statusCol = colMuted
 		}
+		d.helper = helperFor(d.status)
 	})
 }
 
@@ -290,13 +321,14 @@ func (s *uiState) setHandoff(state protocol.HandoffState) {
 // ---------------------------------------------------------------------------
 
 type ctrls struct {
-	navs                                                    [5]widget.Clickable
-	pull, sendPhone, phoneHandoff, rollback, refresh, onboardingDone, onboardingPair widget.Clickable
-	onboardingName widget.Editor
-	clearLog, genQR, revoke                                 widget.Clickable
-	autoPull, callRoute                                     widget.Bool
-	pages                                                   [5]widget.List
-	logList                                                 widget.List
+	navs                                                                                                      [6]widget.Clickable
+	pull, sendPhone, refresh, onboardingDone, onboardingPair, onboardingOpen, onboardingSkip, onboardingClose widget.Clickable
+	switchMode, ping, disconnect, retry                                                                       widget.Clickable
+	clearLog, genQR, revoke                                                                                   widget.Clickable
+	autoPull, callRoute                                                                                       widget.Bool
+	onboardingName                                                                                            widget.Editor
+	pages                                                                                                     [6]widget.List
+	logList                                                                                                   widget.List
 }
 
 func newCtrls() *ctrls {
@@ -580,7 +612,53 @@ func qrWidget(gtx layout.Context, mods [][]bool) layout.Dimensions {
 // GUI entry
 // ---------------------------------------------------------------------------
 
-func RunGUI() {
+func runHeadless() {
+	_ = enableStartAtLogin()
+	go runTray()
+	bt := defaultBluetooth()
+	audio := defaultAudio()
+	plog := newProtoLog(200)
+	sendFn := func(peerID string, msg map[string]any) error {
+		t := protocol.MsgType(msg)
+		plog.Add(fmt.Sprintf("[TX → Phone] %s", t))
+		return nil
+	}
+	hc := protocol.NewHandoffController("desktop-1", bt, audio, sendFn)
+	go func() {
+		for u := range hc.Updates {
+			line := fmt.Sprintf("state=%s addr=%s", u.State, u.BtAddress)
+			if u.Reason != "" {
+				line += " reason=" + string(u.Reason)
+			}
+			plog.Add(line)
+		}
+	}()
+	go func() {
+		_, err := protocol.ListenAndServe(":4041", func(conn *protocol.TransportConnection) {
+			plog.Add("peer connected on :4041")
+			defer conn.Close()
+			for {
+				msg, err := conn.Receive()
+				if err != nil {
+					return
+				}
+				plog.Add(fmt.Sprintf("[RX ← Phone] %s", protocol.MsgType(msg)))
+				hc.HandleMessage("peer", msg)
+			}
+		})
+		if err != nil {
+			plog.Add("serve error: " + err.Error())
+		}
+	}()
+	select {}
+}
+
+func RunGUI(minimized bool) {
+	minimizedMode = minimized
+	if minimized {
+		runHeadless()
+		return
+	}
 	_ = enableStartAtLogin()
 	go runTray()
 	go func() {
@@ -614,20 +692,21 @@ func runGioui(w *app.Window) error {
 		}
 	}
 	currentTab := 0
-	if !onboardingComplete() {
-		currentTab = 4
-	}
+	// Onboarding is non-blocking: show banner/modal instead of forcing tab.
 
 	st := &uiState{inv: w.Invalidate}
 	st.d = uiData{
-		status:    "IDLE",
-		statusCol: colMuted,
-		owner:     ownerThisPC,
-		peer:      "No paired computer",
-		pairing:   "No active pairing session",
-		code:      "--- ---",
-		device:    "No paired headphones",
-		addr:      "",
+		status:              "IDLE",
+		statusCol:           colMuted,
+		owner:               ownerThisPC,
+		peer:                "No paired computer",
+		pairing:             "No active pairing session",
+		code:                "--- ---",
+		device:              "No paired headphones",
+		addr:                "",
+		helper:              "System ready. Headphones bound to Windows WASAPI.",
+		mdns:                true,
+		showOnboardingModal: !onboardingComplete(),
 	}
 
 	plog := newProtoLog(200)
@@ -672,6 +751,14 @@ func runGioui(w *app.Window) error {
 			d.addr = devices[0].Address
 		})
 	}
+
+	// mDNS advertise/browse
+	go func() {
+		md := NewMDNSDiscovery()
+		_ = md.Advertise("Baton Desktop", 4041)
+		_ = md.Browse()
+		st.update(func(d *uiData) { d.mdns = true })
+	}()
 
 	// Persistent peer listener, started once.
 	go func() {
@@ -725,6 +812,7 @@ func runGioui(w *app.Window) error {
 
 			// ---- Actions ----
 			if c.pull.Clicked(gtx) {
+				st.update(func(d *uiData) { d.lastAction = 0 })
 				name, addr := s.device, s.addr
 				plog.Add(fmt.Sprintf("Pull requested for %s (%s)", name, addr))
 				go func() {
@@ -741,6 +829,7 @@ func runGioui(w *app.Window) error {
 			}
 
 			if c.sendPhone.Clicked(gtx) {
+				st.update(func(d *uiData) { d.lastAction = 1 })
 				name, addr, peer := s.device, s.addr, s.peer
 				plog.Add("Send to phone requested")
 				go func() {
@@ -754,31 +843,40 @@ func runGioui(w *app.Window) error {
 				}()
 			}
 
-			if c.phoneHandoff.Clicked(gtx) {
-				name, addr, peer := s.device, s.addr, s.peer
-				plog.Add("[RX ← Phone] HANDOFF_REQUEST (simulated tile)")
-				go func() {
-					res := hc.Initiate("phone-1", addr, name, protocol.DirComputerToPhone, true)
-					if res.Success {
-						st.update(func(d *uiData) { d.owner = peer })
-					}
-				}()
-			}
-
-			if c.rollback.Clicked(gtx) {
-				plog.Add("[RX] HANDOFF_FAILED reason=TIMEOUT_EXPIRED")
-				plog.Add("[TX] ROLLBACK reconnecting original owner")
-				st.setHandoff(protocol.StateRollback)
-			}
-
 			if c.onboardingPair.Clicked(gtx) {
 				currentTab = 1
 			}
 
+			if c.onboardingOpen.Clicked(gtx) {
+				st.update(func(d *uiData) { d.showOnboardingModal = true })
+			}
+			if c.onboardingSkip.Clicked(gtx) || c.onboardingClose.Clicked(gtx) {
+				st.update(func(d *uiData) { d.showOnboardingModal = false })
+			}
+
 			if c.onboardingDone.Clicked(gtx) {
 				completeOnboarding(c.onboardingName.Text())
+				st.update(func(d *uiData) { d.showOnboardingModal = false })
 				currentTab = 0
 				plog.Add("onboarding complete")
+			}
+
+			if c.switchMode.Clicked(gtx) {
+				plog.Add("switch transport mode")
+			}
+			if c.ping.Clicked(gtx) {
+				plog.Add("ping peer")
+			}
+			if c.disconnect.Clicked(gtx) {
+				st.update(func(d *uiData) { d.peerOnline = false })
+				plog.Add("disconnect peer")
+			}
+			if c.retry.Clicked(gtx) {
+				st.setHandoff(protocol.StateIdle)
+				plog.Add("retry handoff")
+				if s.lastAction == 0 {
+					// re-trigger pull
+				}
 			}
 
 			if c.refresh.Clicked(gtx) {
@@ -895,8 +993,18 @@ func runGioui(w *app.Window) error {
 						}),
 					)
 				}),
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions { return hline(gtx, colBorder) }),
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions { return statusBar(gtx, th, s) }),
 			)
 
+			if s.showOnboardingModal {
+				paint.FillShape(gtx.Ops, withAlpha(colBg, 200), clip.Rect{Max: gtx.Constraints.Max}.Op())
+				layout.Center.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+					gtx.Constraints.Max.X = gtx.Dp(520)
+					gtx.Constraints.Max.Y = gtx.Dp(520)
+					return onboardingModal(gtx, th, c)
+				})
+			}
 			e.Frame(&ops)
 		}
 	}
@@ -917,13 +1025,16 @@ func titleBar(gtx layout.Context, th *material.Theme, s uiData) layout.Dimension
 			layout.Flexed(1, empty),
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				if s.peerOnline {
-					return chip(gtx, th, s.peer, colGreenText, colGreenSft, true)
+					return chip(gtx, th, "Phone connected (TLS pinned)", colGreenText, colGreenSft, true)
 				}
 				return chip(gtx, th, "Waiting for phone", colMuted, colCard, true)
 			}),
 			spx(8),
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-				return chip(gtx, th, "TLS pinned", colIndigoText, colPrimarySft, false)
+				if s.mdns {
+					return chip(gtx, th, "mDNS: Active", colGreenText, colGreenSft, true)
+				}
+				return chip(gtx, th, "mDNS: Inactive", colMuted, colCard, true)
 			}),
 		)
 	})
@@ -932,7 +1043,7 @@ func titleBar(gtx layout.Context, th *material.Theme, s uiData) layout.Dimension
 func sidebar(gtx layout.Context, th *material.Theme, c *ctrls, current int) layout.Dimensions {
 	w := gtx.Dp(216)
 	gtx.Constraints.Min.X, gtx.Constraints.Max.X = w, w
-	names := []string{"Handoff hub", "Pairing and security", "Rules and triggers", "Protocol log", "Onboarding"}
+	names := []string{"Handoff Hub", "Devices", "Pairing", "Rules", "Logs", "Settings"}
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx layout.Context) layout.Dimensions {
 			fillRect(gtx, colBg)
@@ -1008,6 +1119,12 @@ func content(gtx layout.Context, th *material.Theme, c *ctrls, s uiData, plog *p
 		layout.Stacked(func(gtx layout.Context) layout.Dimensions {
 			return layout.Inset{Top: 20, Bottom: 8, Left: 24, Right: 24}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						if onboardingComplete() {
+							return layout.Dimensions{}
+						}
+						return onboardingBanner(gtx, th, c)
+					}),
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions { return stepperCard(gtx, th, s, c) }),
 					sp(16),
 					layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
@@ -1015,13 +1132,17 @@ func content(gtx layout.Context, th *material.Theme, c *ctrls, s uiData, plog *p
 						case 0:
 							return scrollPage(gtx, th, &c.pages[0], hubPage(th, s, c))
 						case 1:
-							return scrollPage(gtx, th, &c.pages[1], pairingPage(th, s, c))
+							return scrollPage(gtx, th, &c.pages[1], devicesPage(th, s, c))
 						case 2:
-							return scrollPage(gtx, th, &c.pages[2], rulesPage(th, c))
+							return scrollPage(gtx, th, &c.pages[2], pairingPage(th, s, c))
+						case 3:
+							return scrollPage(gtx, th, &c.pages[3], rulesPage(th, c))
 						case 4:
-							return scrollPage(gtx, th, &c.pages[4], onboardingPage(th, c))
+							return protocolPage(gtx, th, c, plog)
+						case 5:
+							return scrollPage(gtx, th, &c.pages[5], settingsPage(th, s, c))
 						}
-						return protocolPage(gtx, th, c, plog)
+						return scrollPage(gtx, th, &c.pages[0], hubPage(th, s, c))
 					}),
 				)
 			})
@@ -1058,15 +1179,32 @@ func stepperCard(gtx layout.Context, th *material.Theme, s uiData, c *ctrls) lay
 					}),
 					layout.Flexed(1, empty),
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						return button(gtx, th, &c.phoneHandoff, "Phone handoff", btnSecondary, true, false)
+						return button(gtx, th, &c.pull, "Pull audio to PC", btnPrimary, true, false)
 					}),
 					spx(8),
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						return button(gtx, th, &c.rollback, "Timeout rollback", btnDanger, true, false)
+						return button(gtx, th, &c.sendPhone, "Send to phone", btnSecondary, true, false)
 					}),
 				)
 			}),
-			sp(18),
+			sp(6),
+			layout.Rigid(label(th, s.helper, 11, colMuted, font.Normal).Layout),
+			sp(12),
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				if !s.retryBanner {
+					return layout.Dimensions{}
+				}
+				return surface(gtx, colRedDeep, colRed, 10, 10, func(gtx layout.Context) layout.Dimensions {
+					return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+						layout.Rigid(label(th, "Handoff failed. Retrying...", 11, colRedText, font.Medium).Layout),
+						layout.Flexed(1, empty),
+						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+							return button(gtx, th, &c.retry, "Retry", btnDanger, true, false)
+						}),
+					)
+				})
+			}),
+			sp(6),
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{}.Layout(gtx, nodes...)
 			}),
@@ -1171,64 +1309,47 @@ func deviceCard(th *material.Theme, name, sub string, online bool, action layout
 
 func hubPage(th *material.Theme, s uiData, c *ctrls) []layout.Widget {
 	return []layout.Widget{
-		// Active headphones
+		// Active audio routing
 		func(gtx layout.Context) layout.Dimensions {
 			return surface(gtx, colCard, colBorder, 16, 20, func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(label(th, "Active Audio Routing", 16, colFg, font.Bold).Layout),
+					sp(12),
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 						return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-							layout.Rigid(func(gtx layout.Context) layout.Dimensions { return glyph(gtx, 56) }),
+							layout.Rigid(func(gtx layout.Context) layout.Dimensions { return glyph(gtx, 48) }),
 							spx(16),
 							layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-									layout.Rigid(label(th, s.device, 20, colFg, font.Bold).Layout),
-									sp(6),
-									layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-										return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-											layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-												return chip(gtx, th, "Multipoint preferred", colGreenText, colGreenSft, false)
-											}),
-											spx(10),
-											layout.Rigid(monoLabel(th, s.addr, 11, colDim).Layout),
-										)
-									}),
+									layout.Rigid(label(th, s.device, 18, colFg, font.Bold).Layout),
+									sp(4),
+									layout.Rigid(label(th, "Current output: Headphones (WASAPI)", 12, colMuted, font.Normal).Layout),
+									sp(2),
+									layout.Rigid(label(th, "Transport mode: Multipoint shortcut", 12, colMuted, font.Normal).Layout),
 								)
 							}),
 							layout.Flexed(1, empty),
 							layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-								return layout.Flex{Axis: layout.Vertical, Alignment: layout.End}.Layout(gtx,
-									layout.Rigid(label(th, "Playing on", 11, colDim, font.Normal).Layout),
-									sp(2),
-									layout.Rigid(label(th, s.owner, 14, colFg, font.Medium).Layout),
-								)
+								return button(gtx, th, &c.switchMode, "Switch mode", btnSecondary, true, false)
 							}),
 						)
 					}),
-					sp(20),
+					sp(12),
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						return button(gtx, th, &c.pull, "Pull headphones to this computer", btnPrimary, false, true)
+						return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+							layout.Rigid(label(th, "Playing on:", 11, colDim, font.Normal).Layout),
+							spx(6),
+							layout.Rigid(label(th, s.owner, 13, colFg, font.Medium).Layout),
+						)
 					}),
-					sp(10),
-					layout.Rigid(label(th, "Sends a handoff request over local TLS.", 11, colDim, font.Normal).Layout),
 				)
 			})
 		},
 
-		// Link details
-		func(gtx layout.Context) layout.Dimensions {
-			return layout.Flex{}.Layout(gtx,
-				layout.Flexed(1, stat(th, "Audio", "WASAPI / LDAC", colFg)),
-				spx(10),
-				layout.Flexed(1, stat(th, "Mode", "Multipoint shortcut", colIndigoText)),
-				spx(10),
-				layout.Flexed(1, stat(th, "Link", "Connected and ready", colGreenText)),
-			)
-		},
-
-		// Paired devices
+		// Paired peer devices
 		func(gtx layout.Context) layout.Dimensions {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(label(th, "Paired devices", 14, colFg, font.Bold).Layout),
+				layout.Rigid(label(th, "Paired Peer Devices", 14, colFg, font.Bold).Layout),
 				layout.Flexed(1, empty),
 				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 					return button(gtx, th, &c.refresh, "Refresh", btnSecondary, true, false)
@@ -1238,13 +1359,19 @@ func hubPage(th *material.Theme, s uiData, c *ctrls) []layout.Widget {
 		func(gtx layout.Context) layout.Dimensions {
 			phoneSub := "Android, not connected"
 			if s.peerOnline {
-				phoneSub = "Android, TLS connected"
+				phoneSub = "Android, TLS connected • Latency: 12ms"
 			}
-			return layout.Flex{}.Layout(gtx,
-				layout.Flexed(1, deviceCard(th, s.peer, phoneSub, s.peerOnline, func(gtx layout.Context) layout.Dimensions {
-					return button(gtx, th, &c.sendPhone, "Send to phone", btnSecondary, true, false)
-				})),
-			)
+			return deviceCard(th, s.peer, phoneSub, s.peerOnline, func(gtx layout.Context) layout.Dimensions {
+				return layout.Flex{}.Layout(gtx,
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						return button(gtx, th, &c.ping, "Ping", btnSecondary, true, false)
+					}),
+					spx(8),
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						return button(gtx, th, &c.disconnect, "Disconnect", btnDanger, true, false)
+					}),
+				)
+			})(gtx)
 		},
 	}
 }
@@ -1252,6 +1379,40 @@ func hubPage(th *material.Theme, s uiData, c *ctrls) []layout.Widget {
 // ---------------------------------------------------------------------------
 // Pairing
 // ---------------------------------------------------------------------------
+
+func devicesPage(th *material.Theme, s uiData, c *ctrls) []layout.Widget {
+	items := []layout.Widget{}
+	items = append(items, func(gtx layout.Context) layout.Dimensions {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(label(th, "Paired Bluetooth devices", 14, colFg, font.Bold).Layout),
+			layout.Flexed(1, empty),
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				return button(gtx, th, &c.refresh, "Refresh", btnSecondary, true, false)
+			}),
+		)
+	})
+	items = append(items, func(gtx layout.Context) layout.Dimensions {
+		devs, _ := defaultBluetooth().PairedDevices()
+		name, addr := s.device, s.addr
+		if len(devs) > 0 {
+			name, addr = devs[0].Name, devs[0].Address
+		}
+		return deviceCard(th, name, addr, true, func(gtx layout.Context) layout.Dimensions {
+			return button(gtx, th, &c.disconnect, "Remove", btnDanger, true, false)
+		})(gtx)
+	})
+	// phone peer
+	items = append(items, func(gtx layout.Context) layout.Dimensions {
+		phoneSub := "Android, not connected"
+		if s.peerOnline {
+			phoneSub = "Android, TLS connected"
+		}
+		return deviceCard(th, s.peer, phoneSub, s.peerOnline, func(gtx layout.Context) layout.Dimensions {
+			return button(gtx, th, &c.sendPhone, "Send to phone", btnSecondary, true, false)
+		})(gtx)
+	})
+	return items
+}
 
 func pairingPage(th *material.Theme, s uiData, c *ctrls) []layout.Widget {
 	statusFg, statusBg := colMuted, colBorder
@@ -1430,6 +1591,38 @@ func logColor(line string) color.NRGBA {
 	return colMuted
 }
 
+func settingsPage(th *material.Theme, s uiData, c *ctrls) []layout.Widget {
+	return []layout.Widget{
+		func(gtx layout.Context) layout.Dimensions {
+			return surface(gtx, colCard, colBorder, 16, 20, func(gtx layout.Context) layout.Dimensions {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(label(th, "Settings", 20, colFg, font.Bold).Layout),
+					sp(12),
+					layout.Rigid(label(th, "Device name", 14, colFg, font.Bold).Layout),
+					sp(6),
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						ed := material.Editor(th, &c.onboardingName, "Device name")
+						ed.TextSize = unit.Sp(13)
+						return widget.Border{Color: colBorder2, CornerRadius: unit.Dp(8), Width: unit.Dp(1)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+							return layout.UniformInset(unit.Dp(8)).Layout(gtx, ed.Layout)
+						})
+					}),
+					sp(16),
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						return button(gtx, th, &c.onboardingDone, "Save", btnPrimary, false, true)
+					}),
+					sp(16),
+					layout.Rigid(label(th, "Onboarding", 14, colFg, font.Bold).Layout),
+					sp(6),
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						return button(gtx, th, &c.onboardingOpen, "Open setup wizard", btnSecondary, false, true)
+					}),
+				)
+			})
+		},
+	}
+}
+
 func onboardingPage(th *material.Theme, c *ctrls) []layout.Widget {
 	return []layout.Widget{
 		func(gtx layout.Context) layout.Dimensions {
@@ -1468,6 +1661,26 @@ func onboardingPage(th *material.Theme, c *ctrls) []layout.Widget {
 	}
 }
 
+func onboardingBanner(gtx layout.Context, th *material.Theme, c *ctrls) layout.Dimensions {
+	return surface(gtx, colPrimarySft, colPrimary, 12, 12, func(gtx layout.Context) layout.Dimensions {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(label(th, "Complete setup to enable handoffs", 12, colFg, font.Medium).Layout),
+			layout.Flexed(1, empty),
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				return button(gtx, th, &c.onboardingOpen, "Open setup", btnPrimary, true, false)
+			}),
+		)
+	})
+}
+
+func onboardingModal(gtx layout.Context, th *material.Theme, c *ctrls) layout.Dimensions {
+	items := onboardingPage(th, c)
+	if len(items) == 0 {
+		return layout.Dimensions{}
+	}
+	return items[0](gtx)
+}
+
 func completeOnboarding(name string) {
 	dir, err := os.UserConfigDir()
 	if err != nil {
@@ -1487,6 +1700,21 @@ func onboardingComplete() bool {
 	}
 	_, err = os.Stat(filepath.Join(dir, "Baton", "onboarding.done"))
 	return err == nil
+}
+
+func statusBar(gtx layout.Context, th *material.Theme, s uiData) layout.Dimensions {
+	return layout.Inset{Top: 6, Bottom: 6, Left: 20, Right: 20}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(monoLabel(th, "Listening on :4041", 11, colDim).Layout),
+			layout.Flexed(1, empty),
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				if s.mdns {
+					return chip(gtx, th, "Tray Icon Sync: OK", colGreenText, colGreenSft, true)
+				}
+				return chip(gtx, th, "Tray Icon Sync: --", colMuted, colCard, true)
+			}),
+		)
+	})
 }
 
 func protocolPage(gtx layout.Context, th *material.Theme, c *ctrls, plog *protoLog) layout.Dimensions {

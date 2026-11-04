@@ -578,6 +578,8 @@ func qrWidget(gtx layout.Context, mods [][]bool) layout.Dimensions {
 // ---------------------------------------------------------------------------
 
 func RunGUI() {
+	_ = enableStartAtLogin()
+	go runTray()
 	go func() {
 		w := new(app.Window)
 		w.Option(

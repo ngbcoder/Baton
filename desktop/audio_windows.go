@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"syscall"
+	"time"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -119,34 +120,25 @@ func (a *windowsAudio) PausePlayback() error {
 	return runCmd(cmd)
 }
 
-func (a *windowsAudio) SetDefaultOutput(addr string) error {
+func (a *windowsAudio) trySetDefaultOutput(target string) error {
 	_ = windows.CoInitializeEx(0, COINIT_APARTMENT)
 	defer windows.CoUninitialize()
 
-	target := addr
-	if names, addrs, err := EnumeratePairedDevices(); err == nil {
-		for i := range addrs {
-			if addrs[i] == addr {
-				target = names[i]
-				break
-			}
-		}
-	}
 	target = strings.ToLower(target)
 
 	// Create device enumerator.
 	var enumerator *immDeviceEnumerator
-	hr := windows.CoCreateInstance(&clsidMMDeviceEnumerator, nil, CLSCTX_ALL, &iidIMMDeviceEnumerator, (*unsafe.Pointer)(unsafe.Pointer(&enumerator)))
-	if hr != nil {
-		return fmt.Errorf("CoCreateInstance enumerator failed: %v", hr)
+	hr := coCreateInstance(&clsidMMDeviceEnumerator, &iidIMMDeviceEnumerator, unsafe.Pointer(&enumerator))
+	if hr != 0 {
+		return fmt.Errorf("CoCreateInstance enumerator failed: 0x%x", hr)
 	}
 	defer syscall.SyscallN(enumerator.lpVtbl.Release, uintptr(unsafe.Pointer(enumerator)))
 
 	// Enumerate active render endpoints.
 	var collection *immDeviceCollection
-	hr2 := syscall.SyscallN(enumerator.lpVtbl.EnumAudioEndpoints, uintptr(unsafe.Pointer(enumerator)), E_RENDER, DEVICE_STATE_ACTIVE, uintptr(unsafe.Pointer(&collection)))
-	if hr2 != 0 {
-		return fmt.Errorf("EnumAudioEndpoints failed: %d", hr2)
+	r1, _, _ := syscall.SyscallN(enumerator.lpVtbl.EnumAudioEndpoints, uintptr(unsafe.Pointer(enumerator)), E_RENDER, DEVICE_STATE_ACTIVE, uintptr(unsafe.Pointer(&collection)))
+	if r1 != 0 {
+		return fmt.Errorf("EnumAudioEndpoints failed: 0x%x", r1)
 	}
 	defer syscall.SyscallN(collection.lpVtbl.Release, uintptr(unsafe.Pointer(collection)))
 
@@ -192,9 +184,9 @@ func (a *windowsAudio) SetDefaultOutput(addr string) error {
 
 	// PolicyConfig
 	var pc *policyConfig
-	hr3 := windows.CoCreateInstance(&clsidPolicyConfig, nil, CLSCTX_ALL, &iidIPolicyConfig, (*unsafe.Pointer)(unsafe.Pointer(&pc)))
-	if hr3 != nil {
-		return fmt.Errorf("CoCreateInstance PolicyConfig failed: %v", hr3)
+	hr3 := coCreateInstance(&clsidPolicyConfig, &iidIPolicyConfig, unsafe.Pointer(&pc))
+	if hr3 != 0 {
+		return fmt.Errorf("CoCreateInstance PolicyConfig failed: 0x%x", hr3)
 	}
 	defer syscall.SyscallN(pc.lpVtbl.Release, uintptr(unsafe.Pointer(pc)))
 
@@ -205,7 +197,45 @@ func (a *windowsAudio) SetDefaultOutput(addr string) error {
 	return nil
 }
 
+var ole32 = syscall.NewLazyDLL("ole32.dll")
+var procCoCreateInstance = ole32.NewProc("CoCreateInstance")
+
+func coCreateInstance(clsid, iid *windows.GUID, ppv unsafe.Pointer) uintptr {
+	r1, _, _ := procCoCreateInstance.Call(
+		uintptr(unsafe.Pointer(clsid)),
+		0,
+		CLSCTX_ALL,
+		uintptr(unsafe.Pointer(iid)),
+		uintptr(ppv),
+	)
+	return r1
+}
+
+func (a *windowsAudio) SetDefaultOutput(addr string) error {
+	target := addr
+	if names, addrs, err := EnumeratePairedDevices(); err == nil {
+		for i := range addrs {
+			if addrs[i] == addr {
+				target = names[i]
+				break
+			}
+		}
+	}
+	var lastErr error
+	for attempt := 0; attempt < 5; attempt++ {
+		if attempt > 0 {
+			time.Sleep(500 * time.Millisecond)
+		}
+		if err := a.trySetDefaultOutput(strings.ToLower(target)); err == nil {
+			return nil
+		} else {
+			lastErr = err
+		}
+	}
+	return lastErr
+}
+
 func runCmd(c string) error {
-	// simple
+	// simple placeholder
 	return nil
 }

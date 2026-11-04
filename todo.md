@@ -128,10 +128,10 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 ## M3 — Discovery
 
 ### M3.1 mDNS service
-- [ ] Choose mDNS library for Dart/Flutter (e.g. `multicast_dns` or native)
-- [ ] Advertise `_baton._tcp` with device name + port + version TXT
-- [ ] Browse for `_baton._tcp` services on LAN
-- [ ] Resolve service to IP + port
+- [x] Choose mDNS library for Dart/Flutter (e.g. `multicast_dns` or native)
+- [x] Advertise `_baton._tcp` with device name + port + version TXT
+- [x] Browse for `_baton._tcp` services on LAN
+- [x] Resolve service to IP + port
 - [ ] Handle service add/remove/update events
 - [ ] Tests with two processes on loopback (if feasible)
 
@@ -157,26 +157,26 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 - [x] Wrap socket in TLS
 - [x] Length-prefixed JSON framing read/write
 - [ ] Message id dedup / correlation
-- [ ] Heartbeat every 10 s
-- [ ] Detect dead connection (missed heartbeats) and reconnect
+- [x] Heartbeat every 10 s
+- [x] Detect dead connection (missed heartbeats) and reconnect
 - [x] Graceful close
 
 ### M4.2 Connection state machine
-- [ ] States: `disconnected`, `connecting`, `handshaking`, `connected`, `reconnecting`
-- [ ] Emit state changes via stream
-- [ ] Handle `Hello` exchange on connect
+- [x] States: `disconnected`, `connecting`, `handshaking`, `connected`, `reconnecting`
+- [x] Emit state changes via stream
+- [x] Handle `Hello` exchange on connect
 - [ ] Tests for transitions
 
 ### M4.3 Multi-peer support
-- [ ] Support one connection per paired peer
-- [ ] Connection pool keyed by peer id
-- [ ] Broadcast `DEVICE_LIST` sync
+- [x] Support one connection per paired peer
+- [x] Connection pool keyed by peer id
+- [x] Broadcast `DEVICE_LIST` sync
 - [ ] Tests for two peers
 
 ### M4.4 Backpressure & ordering
-- [ ] Queue outbound messages when disconnected; flush on reconnect (with TTL)
-- [ ] Ensure in-order delivery per connection
-- [ ] Drop stale queued messages older than N seconds
+- [x] Queue outbound messages when disconnected; flush on reconnect (with TTL)
+- [x] Ensure in-order delivery per connection
+- [x] Drop stale queued messages older than N seconds
 
 ---
 
@@ -314,13 +314,13 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 - [x] Map errors to reason codes
 
 ### M8.3 Default audio output
-- [ ] Use Windows audio policy API (MMDevice/EndpointVolume) to set default output
-- [ ] Wait for device to appear after connect
-- [ ] Retry with backoff
+- [x] Use Windows audio policy API (MMDevice/EndpointVolume) to set default output
+- [x] Wait for device to appear after connect
+- [x] Retry with backoff
 
 ### M8.4 Tray & startup
-- [ ] Tray icon with owner status and "pull here" action
-- [ ] Start-at-login via registry/Task Scheduler
+- [x] Tray icon with owner status and "pull here" action
+- [x] Start-at-login via registry/Task Scheduler
 - [x] Pairing window
 
 ### M8.5 Validation
@@ -330,7 +330,7 @@ Granular task breakdown derived from `design.md`. Check off items as they are co
 
 ### M8.6 Windows packaging
 - [ ] MSIX build
-- [ ] Installer (MSI or Inno Setup)
+- [x] Installer (MSI or Inno Setup) (Inno Setup script added)
 - [ ] Code signing plan (optional for v1)
 
 ---

@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -289,11 +290,12 @@ func (s *uiState) setHandoff(state protocol.HandoffState) {
 // ---------------------------------------------------------------------------
 
 type ctrls struct {
-	navs                                                    [4]widget.Clickable
-	pull, sendPhone, phoneHandoff, rollback, refresh        widget.Clickable
+	navs                                                    [5]widget.Clickable
+	pull, sendPhone, phoneHandoff, rollback, refresh, onboardingDone, onboardingPair widget.Clickable
+	onboardingName widget.Editor
 	clearLog, genQR, revoke                                 widget.Clickable
 	autoPull, callRoute                                     widget.Bool
-	pages                                                   [3]widget.List
+	pages                                                   [5]widget.List
 	logList                                                 widget.List
 }
 
@@ -301,6 +303,7 @@ func newCtrls() *ctrls {
 	c := &ctrls{}
 	c.autoPull.Value = true
 	c.callRoute.Value = true
+	c.onboardingName.SingleLine = true
 	for i := range c.pages {
 		c.pages[i].Axis = layout.Vertical
 	}
@@ -605,14 +608,22 @@ func runGioui(w *app.Window) error {
 
 	var ops op.Ops
 	c := newCtrls()
+	if dir, err := os.UserConfigDir(); err == nil {
+		if name, err := os.ReadFile(filepath.Join(dir, "Baton", "device_name.txt")); err == nil {
+			c.onboardingName.SetText(string(name))
+		}
+	}
 	currentTab := 0
+	if !onboardingComplete() {
+		currentTab = 4
+	}
 
 	st := &uiState{inv: w.Invalidate}
 	st.d = uiData{
 		status:    "IDLE",
 		statusCol: colMuted,
 		owner:     ownerThisPC,
-		peer:      "Pixel 8 Pro",
+		peer:      "No paired computer",
 		pairing:   "No active pairing session",
 		code:      "--- ---",
 		device:    "No paired headphones",
@@ -758,6 +769,16 @@ func runGioui(w *app.Window) error {
 				plog.Add("[RX] HANDOFF_FAILED reason=TIMEOUT_EXPIRED")
 				plog.Add("[TX] ROLLBACK reconnecting original owner")
 				st.setHandoff(protocol.StateRollback)
+			}
+
+			if c.onboardingPair.Clicked(gtx) {
+				currentTab = 1
+			}
+
+			if c.onboardingDone.Clicked(gtx) {
+				completeOnboarding(c.onboardingName.Text())
+				currentTab = 0
+				plog.Add("onboarding complete")
 			}
 
 			if c.refresh.Clicked(gtx) {
@@ -911,7 +932,7 @@ func titleBar(gtx layout.Context, th *material.Theme, s uiData) layout.Dimension
 func sidebar(gtx layout.Context, th *material.Theme, c *ctrls, current int) layout.Dimensions {
 	w := gtx.Dp(216)
 	gtx.Constraints.Min.X, gtx.Constraints.Max.X = w, w
-	names := []string{"Handoff hub", "Pairing and security", "Rules and triggers", "Protocol log"}
+	names := []string{"Handoff hub", "Pairing and security", "Rules and triggers", "Protocol log", "Onboarding"}
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx layout.Context) layout.Dimensions {
 			fillRect(gtx, colBg)
@@ -997,6 +1018,8 @@ func content(gtx layout.Context, th *material.Theme, c *ctrls, s uiData, plog *p
 							return scrollPage(gtx, th, &c.pages[1], pairingPage(th, s, c))
 						case 2:
 							return scrollPage(gtx, th, &c.pages[2], rulesPage(th, c))
+						case 4:
+							return scrollPage(gtx, th, &c.pages[4], onboardingPage(th, c))
 						}
 						return protocolPage(gtx, th, c, plog)
 					}),
@@ -1221,10 +1244,6 @@ func hubPage(th *material.Theme, s uiData, c *ctrls) []layout.Widget {
 				layout.Flexed(1, deviceCard(th, s.peer, phoneSub, s.peerOnline, func(gtx layout.Context) layout.Dimensions {
 					return button(gtx, th, &c.sendPhone, "Send to phone", btnSecondary, true, false)
 				})),
-				spx(10),
-				layout.Flexed(1, deviceCard(th, "Windows Workstation", "Offline on LAN", false, func(gtx layout.Context) layout.Dimensions {
-					return label(th, "Unreachable", 11, colDim, font.Normal).Layout(gtx)
-				})),
 			)
 		},
 	}
@@ -1409,6 +1428,65 @@ func logColor(line string) color.NRGBA {
 		return colDim
 	}
 	return colMuted
+}
+
+func onboardingPage(th *material.Theme, c *ctrls) []layout.Widget {
+	return []layout.Widget{
+		func(gtx layout.Context) layout.Dimensions {
+			return surface(gtx, colCard, colBorder, 16, 20, func(gtx layout.Context) layout.Dimensions {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(label(th, "Welcome to Baton", 20, colFg, font.Bold).Layout),
+					sp(8),
+					layout.Rigid(label(th, "Name your device", 14, colFg, font.Bold).Layout),
+					sp(6),
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						ed := material.Editor(th, &c.onboardingName, "Device name")
+						ed.TextSize = unit.Sp(13)
+						return widget.Border{Color: colBorder2, CornerRadius: unit.Dp(8), Width: unit.Dp(1)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+							return layout.UniformInset(unit.Dp(8)).Layout(gtx, ed.Layout)
+						})
+					}),
+					sp(16),
+					layout.Rigid(label(th, "Prerequisite", 14, colFg, font.Bold).Layout),
+					sp(6),
+					layout.Rigid(label(th, "Your Bluetooth headphones must be paired with BOTH this computer and your phone.", 12, colMuted, font.Normal).Layout),
+					sp(16),
+					layout.Rigid(label(th, "Multipoint tip", 14, colFg, font.Bold).Layout),
+					sp(6),
+					layout.Rigid(label(th, "If your headphones support multipoint, Baton switches audio seamlessly without disconnecting.", 12, colMuted, font.Normal).Layout),
+					sp(16),
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						return button(gtx, th, &c.onboardingPair, "Pair phone now", btnSecondary, false, true)
+					}),
+					sp(8),
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						return button(gtx, th, &c.onboardingDone, "Get started", btnPrimary, false, true)
+					}),
+				)
+			})
+		},
+	}
+}
+
+func completeOnboarding(name string) {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return
+	}
+	os.MkdirAll(filepath.Join(dir, "Baton"), 0755)
+	os.WriteFile(filepath.Join(dir, "Baton", "onboarding.done"), []byte("1"), 0644)
+	if name != "" {
+		os.WriteFile(filepath.Join(dir, "Baton", "device_name.txt"), []byte(name), 0644)
+	}
+}
+
+func onboardingComplete() bool {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return false
+	}
+	_, err = os.Stat(filepath.Join(dir, "Baton", "onboarding.done"))
+	return err == nil
 }
 
 func protocolPage(gtx layout.Context, th *material.Theme, c *ctrls, plog *protoLog) layout.Dimensions {

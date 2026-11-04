@@ -80,7 +80,10 @@ class MainActivity : FlutterActivity() {
         try {
             val bonded: Set<BluetoothDevice>? = adapter.bondedDevices
             bonded?.forEach { device ->
-                val name = try { device.name ?: "Bluetooth Device" } catch (e: SecurityException) { "Bluetooth Device" }
+                val btClass = try { device.bluetoothClass } catch (e: SecurityException) { null }
+               val major = btClass?.majorDeviceClass ?: -1
+               if (major != android.bluetooth.BluetoothClass.Major.AUDIO_VIDEO) return@forEach
+               val name = try { device.name ?: "Bluetooth Device" } catch (e: SecurityException) { "Bluetooth Device" }
                 devices.add(mapOf(
                     "name" to name,
                     "address" to device.address,

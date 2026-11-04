@@ -96,8 +96,11 @@ func EnumeratePairedDevices() ([]string, []string, error) {
 	}
 	defer procFindDeviceClose.Call(hFind)
 	for {
-		names = append(names, syscall.UTF16ToString(di.szName[:]))
-		addrs = append(addrs, formatBtAddr(di.address.ullLong))
+		// Only keep audio/video devices (headphones, headsets, speakers).
+		if (di.ulClassofDevice & 0x1F00) == 0x0400 {
+			names = append(names, syscall.UTF16ToString(di.szName[:]))
+			addrs = append(addrs, formatBtAddr(di.address.ullLong))
+		}
 		ret, _, _ := procFindNextDevice.Call(hFind, uintptr(unsafe.Pointer(&di)))
 		if ret == 0 {
 			break
@@ -140,6 +143,9 @@ func (w *windowsBluetooth) PairedDevices() ([]protocol.BtDevice, error) {
 	}
 	var out []protocol.BtDevice
 	for i := range names {
+		// Only include audio/video devices (headphones, speakers, headsets).
+		// The enumeration helper does not expose class-of-device yet, so keep all
+		// for now; filtering happens in the GUI by name heuristics is not reliable.
 		out = append(out, protocol.BtDevice{Address: addrs[i], Name: names[i]})
 	}
 	return out, nil

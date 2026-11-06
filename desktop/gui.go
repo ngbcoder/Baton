@@ -613,7 +613,6 @@ func qrWidget(gtx layout.Context, mods [][]bool) layout.Dimensions {
 // ---------------------------------------------------------------------------
 
 func runHeadless() {
-	_ = enableStartAtLogin()
 	go runTray()
 	bt := defaultBluetooth()
 	audio := defaultAudio()
@@ -659,7 +658,6 @@ func RunGUI(minimized bool) {
 		runHeadless()
 		return
 	}
-	_ = enableStartAtLogin()
 	go runTray()
 	go func() {
 		w := new(app.Window)
